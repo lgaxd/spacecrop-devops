@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+
+  oracle-db:
+    image: gvenzl/oracle-free:23-slim
+
+    container_name: oracle-rm561413
+
+    restart: unless-stopped
+
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      APP_USER: ${APP_USER}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD}
+
+    ports:
+      - "1521:1521"
+
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./database/spacecrop_ddl.sql:/container-entrypoint-initdb.d/01-ddl.sql
+
+    networks:
+      - spacecrop-network
+
+  spacecrop-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: api-rm561413
+
+    restart: unless-stopped
+
+    depends_on:
+      - oracle-db
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+
+    networks:
+      - spacecrop-network
+
+networks:
+  spacecrop-network:
+    driver: bridge
+
+volumes:
+  oracle-data:
+    name: oracle-data
